@@ -16,6 +16,9 @@ function run(command: string, args: string[]) {
 const root = process.cwd();
 const schemaPath = path.join(root, "prisma", "schema.prisma");
 const databaseUrl = process.env.DATABASE_URL ?? "";
+if (!process.env.DIRECT_URL && process.env.DATABASE_URL_UNPOOLED) {
+  process.env.DIRECT_URL = process.env.DATABASE_URL_UNPOOLED;
+}
 
 if (databaseUrl.startsWith("postgres")) {
   let schema = readFileSync(schemaPath, "utf8");
