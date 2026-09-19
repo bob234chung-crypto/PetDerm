@@ -1,0 +1,47 @@
+{
+  "name": "petderm",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "db:push": "prisma db push",
+    "db:seed": "npx tsx prisma/seed.ts",
+    "db:reset": "prisma db push --force-reset && npx tsx prisma/seed.ts",
+    "verify": "npx tsx scripts/verify-flow.ts",
+    "vercel-build": "npx tsx scripts/vercel-build.ts",
+    "model:fetch": "npx tsx scripts/fetch-model.ts",
+    "model:smoke": "npx tsx scripts/smoke-model.ts",
+    "model:export": "python ml/export_onnx.py",
+    "model:export-data": "python ml/export_dataset.py",
+    "model:train-dry": "python ml/train.py --dry-run",
+    "postinstall": "prisma generate"
+  },
+  "prisma": {
+    "seed": "npx tsx prisma/seed.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.19.3",
+    "@vercel/blob": "^2.8.0",
+    "next": "^15.5.25",
+    "onnxruntime-node": "^1.30.0",
+    "prisma": "^6.19.3",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "sharp": "^0.35.4"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/node": "^26.6.1",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "^15.5.25",
+    "postcss": "^8.5.28",
+    "tailwindcss": "^4.3.3",
+    "tsx": "^4.23.13",
+    "typescript": "^6.0.3"
+  }
+}

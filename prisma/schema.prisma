@@ -1,0 +1,181 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  user
+  clinic
+  reviewer
+  monitor
+}
+
+enum Sex {
+  male
+  female
+  unknown
+}
+
+enum Laterality {
+  left
+  right
+  midline
+  unknown
+}
+
+enum PhotoView {
+  overview
+  frontal
+  oblique_1
+  oblique_2
+}
+
+enum QcStatus {
+  pending
+  pass
+  fail
+}
+
+enum TriageStatus {
+  needs_vet_review
+  cannot_assess
+}
+
+enum LabelValue {
+  yes
+  no
+  uncertain
+  excluded
+}
+
+enum ConsentStatus {
+  active
+  withdrawn
+}
+
+model Consent {
+  id                 String        @id @default(cuid())
+  version            String
+  signerName         String
+  secondaryUse       Boolean       @default(false)
+  status             ConsentStatus @default(active)
+  signedAt           DateTime      @default(now())
+  withdrawnAt        DateTime?
+  dogs               Dog[]
+}
+
+model Dog {
+  id            String    @id @default(cuid())
+  publicId      String    @unique
+  consentId     String
+  consent       Consent   @relation(fields: [consentId], references: [id])
+  ageYears      Float?
+  breed         String
+  mixedBreed    Boolean   @default(false)
+  sex           Sex
+  neutered      Boolean?
+  weightKg      Float?
+  coatColor     String
+  coatLength    String
+  createdAt     DateTime  @default(now())
+  lesions       Lesion[]
+}
+
+model Lesion {
+  id              String        @id @default(cuid())
+  publicId        String        @unique
+  dogId           String
+  dog             Dog           @relation(fields: [dogId], references: [id])
+  site            String
+  laterality      Laterality
+  sizeLengthMm    Float?
+  sizeWidthMm     Float?
+  sizeHeightMm    Float?
+  durationText    String?
+  changeText      String?
+  ulceration      Boolean?
+  pruritus        Boolean?
+  priorMctHistory Boolean?
+  createdAt       DateTime      @default(now())
+  sessions        PhotoSession[]
+  pathology       PathologyRecord?
+}
+
+model PhotoSession {
+  id          String         @id @default(cuid())
+  lesionId    String
+  lesion      Lesion         @relation(fields: [lesionId], references: [id])
+  clinic      String
+  photographer String
+  device      String
+  lighting    String
+  capturedAt  DateTime       @default(now())
+  photos      Photo[]
+  inferences  InferenceRun[]
+}
+
+model Photo {
+  id               String    @id @default(cuid())
+  sessionId        String
+  session          PhotoSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  view             PhotoView
+  originalPath     String
+  researchPath     String
+  sha256           String
+  mimeType         String
+  byteSize         Int
+  originalFilename String
+  qcStatus         QcStatus  @default(pending)
+  qcReasons        String    @default("[]")
+  createdAt        DateTime  @default(now())
+
+  @@unique([sessionId, view])
+}
+
+model InferenceRun {
+  id            String        @id @default(cuid())
+  sessionId     String
+  session       PhotoSession  @relation(fields: [sessionId], references: [id])
+  modelVersion  String
+  status        TriageStatus
+  rejectReasons String        @default("[]")
+  qcPassed      Boolean
+  roiJson       String
+  inputHash     String
+  physicalMatch Boolean
+  visibleRoi    Boolean
+  perViewScores String        @default("[]")
+  uncertainty   String        @default("")
+  oodFlag       Boolean       @default(false)
+  weightsHash   String        @default("")
+  createdAt     DateTime      @default(now())
+}
+
+model PathologyRecord {
+  id               String     @id @default(cuid())
+  lesionId         String     @unique
+  lesion           Lesion     @relation(fields: [lesionId], references: [id])
+  sampledAt        DateTime?
+  sampleType       String?
+  labName          String?
+  reportSummary    String?
+  tumorType        String?
+  malignancyLabel  LabelValue
+  certainty        String
+  reviewerName     String
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+}
+
+model IncidentReport {
+  id          String   @id @default(cuid())
+  lesionId    String?
+  category    String
+  detail      String
+  reporterRole String
+  createdAt   DateTime @default(now())
+}
