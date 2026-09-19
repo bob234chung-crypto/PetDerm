@@ -20,3 +20,4 @@ models/*.onnx
 *.tsbuildinfo
 .DS_Store
 Thumbs.db
+.env.vercel

@@ -4,7 +4,7 @@ import path from "path";
 const BLOB_PREFIX = "blob:";
 
 export function usesBlobStorage() {
-  return Boolean(process.env.BLOB_READ_WRITE_TOKEN);
+  return Boolean(process.env.BLOB_READ_WRITE_TOKEN || process.env.BLOB_STORE_ID);
 }
 
 export function isBlobRef(stored: string) {
