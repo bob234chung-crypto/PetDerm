@@ -1,9 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Role } from "@/lib/constants";
+import { detectDeviceLabel } from "@/lib/device";
+import { RECOMMENDED_LIGHTING } from "@/lib/photo-protocol";
 import {
+  BREED_IDS,
   COAT_COLOR_IDS,
   COAT_LENGTH_IDS,
   LIGHTING_IDS,
@@ -12,11 +15,36 @@ import {
   type Locale,
 } from "@/lib/i18n";
 
-export function CaseForm({ role, locale }: { role: Role; locale: Locale }) {
+export function CaseForm({
+  role,
+  locale,
+  detectedDevice = "",
+}: {
+  role: Role;
+  locale: Locale;
+  detectedDevice?: string;
+}) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
+  const [breed, setBreed] = useState("");
+  const [mixed, setMixed] = useState(false);
+  const [device, setDevice] = useState(detectedDevice);
   const isOwner = role === "user";
+
+  useEffect(() => {
+    let cancelled = false;
+    detectDeviceLabel(detectedDevice).then((result) => {
+      if (cancelled) return;
+      setDevice((current) => {
+        if (current) return current;
+        return result.label && result.label !== "unspecified" ? result.label : "";
+      });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [detectedDevice]);
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -29,7 +57,9 @@ export function CaseForm({ role, locale }: { role: Role; locale: Locale }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         ...payload,
-        mixedBreed: form.get("mixedBreed") === "on",
+        breed,
+        breedOther: String(form.get("breedOther") ?? ""),
+        mixedBreed: mixed,
         ulceration: form.get("ulceration") === "on",
         pruritus: form.get("pruritus") === "on",
         priorMctHistory: form.get("priorMctHistory") === "on",
@@ -39,6 +69,7 @@ export function CaseForm({ role, locale }: { role: Role; locale: Locale }) {
         sizeWidthMm: numberOrNull(form.get("sizeWidthMm")),
         sizeHeightMm: numberOrNull(form.get("sizeHeightMm")),
         neutered: form.get("neutered") === "" ? null : form.get("neutered") === "yes",
+        device,
       }),
     });
     const data = await response.json();
@@ -56,9 +87,35 @@ export function CaseForm({ role, locale }: { role: Role; locale: Locale }) {
       <fieldset className="card space-y-3">
         <legend className="font-extrabold">{t(locale, "caseForm.dog")}</legend>
         <Field name="ageYears" label={t(locale, "caseForm.age")} type="number" step="0.1" />
-        <Field name="breed" label={t(locale, "caseForm.breed")} required placeholder={t(locale, "caseForm.breedPh")} />
+        <label className="block text-sm">
+          {t(locale, "caseForm.breed")}
+          <select
+            name="breed"
+            required
+            value={breed}
+            onChange={(event) => {
+              const next = event.target.value;
+              setBreed(next);
+              if (next === "mixed") setMixed(true);
+            }}
+            className="mt-1 w-full rounded-full border border-sand bg-[#fffef8] px-4 py-2.5"
+          >
+            <option value="" disabled>
+              {t(locale, "caseForm.breedPh")}
+            </option>
+            {BREED_IDS.map((id) => (
+              <option key={id} value={id}>
+                {t(locale, `breed.${id}`)}
+              </option>
+            ))}
+          </select>
+        </label>
+        {breed === "other" ? (
+          <Field name="breedOther" label={t(locale, "caseForm.breedOther")} required placeholder={t(locale, "caseForm.breedOther")} />
+        ) : null}
         <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" name="mixedBreed" /> {t(locale, "caseForm.mixed")}
+          <input type="checkbox" name="mixedBreed" checked={mixed} onChange={(event) => setMixed(event.target.checked)} />{" "}
+          {t(locale, "caseForm.mixed")}
         </label>
         <label className="block text-sm">
           {t(locale, "caseForm.sex")}
@@ -135,12 +192,25 @@ export function CaseForm({ role, locale }: { role: Role; locale: Locale }) {
           required
           defaultValue={isOwner ? t(locale, "caseForm.owner") : "staff-01"}
         />
-        <Field name="device" label={t(locale, "caseForm.device")} required placeholder="iPhone 15" />
+        <label className="block text-sm">
+          {t(locale, "caseForm.device")}
+          <input
+            name="device"
+            required
+            value={device}
+            onChange={(event) => setDevice(event.target.value)}
+            placeholder="iPhone 15"
+            className="mt-1 w-full rounded-full border border-sand bg-[#fffef8] px-4 py-2.5"
+          />
+          <span className="mt-1 block text-xs text-muted">{t(locale, "caseForm.deviceHint")}</span>
+        </label>
         <Select
           name="lighting"
           label={t(locale, "caseForm.lighting")}
+          defaultValue={RECOMMENDED_LIGHTING}
           options={LIGHTING_IDS.map((id) => ({ value: id, label: t(locale, `lighting.${id}`) }))}
         />
+        <p className="text-xs text-muted">{t(locale, "caseForm.lightingHint")}</p>
       </fieldset>
       {error ? <p className="text-sm font-bold text-terra">{error}</p> : null}
       <button disabled={pending} className="btn-primary">
@@ -179,15 +249,21 @@ function Select({
   name,
   label,
   options,
+  defaultValue,
 }: {
   name: string;
   label: string;
   options: { value: string; label: string }[];
+  defaultValue?: string;
 }) {
   return (
     <label className="block text-sm">
       {label}
-      <select name={name} className="mt-1 w-full rounded-full border border-sand bg-[#fffef8] px-4 py-2.5" defaultValue={options[0]?.value}>
+      <select
+        name={name}
+        className="mt-1 w-full rounded-full border border-sand bg-[#fffef8] px-4 py-2.5"
+        defaultValue={defaultValue ?? options[0]?.value}
+      >
         {options.map((option) => (
           <option key={option.value} value={option.value}>
             {option.label}

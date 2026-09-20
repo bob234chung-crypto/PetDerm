@@ -63,6 +63,9 @@ const SITE_ALIAS: Record<string, string> = {
   穿刺活檢: "punch",
   切除活檢: "excision_biopsy",
   手術切除: "surgical",
+  米克斯: "mixed",
+  黃金獵犬: "golden_retriever",
+  拉布拉多: "labrador",
 };
 
 export function formatTriage(
@@ -89,7 +92,11 @@ export function dateLocale(locale: Locale) {
   return "en-GB";
 }
 
-export function fieldLabel(locale: Locale, group: "site" | "coat" | "coatLen" | "lighting" | "sample", value: string) {
+export function fieldLabel(
+  locale: Locale,
+  group: "site" | "coat" | "coatLen" | "lighting" | "sample" | "breed",
+  value: string,
+) {
   const key = SITE_ALIAS[value] ?? value;
   const translated = t(locale, `${group}.${key}`);
   return translated === `${group}.${key}` ? value : translated;
@@ -112,3 +119,34 @@ export const LIGHTING_IDS = [
 ] as const;
 export const SAMPLE_IDS = ["fna", "punch", "excision_biopsy", "surgical", "other"] as const;
 export const VIEW_IDS = ["overview", "frontal", "oblique_1", "oblique_2"] as const;
+export const BREED_IDS = [
+  "mixed",
+  "golden_retriever",
+  "labrador",
+  "poodle",
+  "shih_tzu",
+  "maltese",
+  "pomeranian",
+  "chihuahua",
+  "french_bulldog",
+  "german_shepherd",
+  "siberian_husky",
+  "corgi",
+  "beagle",
+  "schnauzer",
+  "yorkshire_terrier",
+  "dachshund",
+  "border_collie",
+  "shiba",
+  "chow_chow",
+  "samoyed",
+  "pug",
+  "bichon",
+  "cocker_spaniel",
+  "rottweiler",
+  "boxer",
+  "akita",
+  "jack_russell",
+  "malinois",
+  "other",
+] as const;

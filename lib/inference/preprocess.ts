@@ -1,9 +1,10 @@
 import sharp from "sharp";
+import { MODEL_INPUT } from "@/lib/photo-protocol";
 import type { RoiBox } from "./stub";
 
-const SIZE = 224;
-const MEAN = [0.485, 0.456, 0.406];
-const STD = [0.229, 0.224, 0.225];
+const SIZE = MODEL_INPUT.size;
+const MEAN = [...MODEL_INPUT.mean];
+const STD = [...MODEL_INPUT.std];
 
 export async function roiToNchw(buffer: Buffer, roi?: RoiBox) {
   const image = sharp(buffer, { failOn: "none" }).rotate();

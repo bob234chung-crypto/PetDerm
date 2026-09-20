@@ -1,6 +1,7 @@
 import { createHash } from "crypto";
 import { existsSync } from "fs";
 import path from "path";
+import { VISION_GATES } from "@/lib/photo-protocol";
 import type { RoiBox } from "./stub";
 import { roiToNchw } from "./preprocess";
 
@@ -86,13 +87,15 @@ export async function runVisionTriage(params: {
   const energies = perViewScores.map((item) => item.energy);
   const energySpread = (Math.max(...energies) - Math.min(...energies)) / Math.max(...energies, 1e-6);
   const rejectReasons: string[] = [];
-  if (minCosine < 0.25) rejectReasons.push("vision.disagree");
+  if (minCosine < VISION_GATES.minCosineReject) rejectReasons.push("vision.disagree");
   const oodFlag = energies.every((value) => value < 1e-3);
   if (oodFlag) rejectReasons.push("vision.ood");
 
   let uncertainty: VisionResult["uncertainty"] = "low";
-  if (minCosine < 0.55 || energySpread > 0.45) uncertainty = "medium";
-  if (minCosine < 0.35 || energySpread > 0.7) uncertainty = "high";
+  if (minCosine < VISION_GATES.cosineMedium || energySpread > VISION_GATES.energySpreadMedium) uncertainty = "medium";
+  if (minCosine < VISION_GATES.cosineHighUncertainty || energySpread > VISION_GATES.energySpreadHigh) {
+    uncertainty = "high";
+  }
 
   return {
     modelVersion: "photo-triage-v1",

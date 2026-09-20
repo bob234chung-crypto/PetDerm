@@ -15,13 +15,14 @@ export async function POST(request: NextRequest) {
   if (!consent || consent.status !== "active") return jsonError("同意已撤回或無效", 403);
 
   const body = await request.json();
+  const breed = resolveBreed(body);
   const dog = await prisma.dog.create({
     data: {
       publicId: publicCaseId("DOG"),
       consentId,
       ageYears: body.ageYears,
-      breed: String(body.breed ?? "未填"),
-      mixedBreed: Boolean(body.mixedBreed),
+      breed,
+      mixedBreed: Boolean(body.mixedBreed) || breed === "mixed",
       sex: body.sex ?? "unknown",
       neutered: body.neutered,
       weightKg: body.weightKg,
@@ -85,4 +86,12 @@ export async function GET() {
     });
   }
   return jsonError("請使用對應角色頁面", 403);
+}
+
+function resolveBreed(body: { breed?: unknown; breedOther?: unknown }) {
+  const raw = String(body.breed ?? "").trim();
+  if (raw === "other") {
+    return String(body.breedOther ?? "").trim() || "other";
+  }
+  return raw || "未填";
 }

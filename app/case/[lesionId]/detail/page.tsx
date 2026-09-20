@@ -52,7 +52,8 @@ export default async function DetailPage({ params }: { params: Promise<{ lesionI
         </p>
         <p>
           <strong>{t("detail.ids")}</strong>
-          {lesion.dog.publicId} / {lesion.publicId} · {fieldLabel(locale, "site", lesion.site)} · {lesion.dog.breed}
+          {lesion.dog.publicId} / {lesion.publicId} · {fieldLabel(locale, "site", lesion.site)} ·{" "}
+          {fieldLabel(locale, "breed", lesion.dog.breed)}
         </p>
       </section>
       <Link href={`/case/${lesionId}/result`} className="block text-center text-sm font-bold text-terra">

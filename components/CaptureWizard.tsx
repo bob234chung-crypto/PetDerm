@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PHOTO_VIEWS } from "@/lib/constants";
+import { PHOTO_QC, MODEL_INPUT, VISION_GATES } from "@/lib/photo-protocol";
 import { reasonLabel, t, type Locale } from "@/lib/i18n";
 
 type Existing = {
@@ -105,6 +106,32 @@ export function CaptureWizard({
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted">{t(locale, "capture.hint")}</p>
+      <section className="card space-y-2">
+        <h2 className="font-extrabold">{t(locale, "capture.optTitle")}</h2>
+        <ul className="list-disc space-y-1 pl-5 text-sm text-muted">
+          <li>{t(locale, "capture.optLight")}</li>
+          <li>{t(locale, "capture.optCamera")}</li>
+          <li>{t(locale, "capture.optFrame")}</li>
+          <li>{t(locale, "capture.optScale")}</li>
+          <li>{t(locale, "capture.optAvoid")}</li>
+        </ul>
+        <h3 className="pt-2 font-extrabold">{t(locale, "capture.algoTitle")}</h3>
+        <p className="text-sm text-muted">{t(locale, "capture.algoLead")}</p>
+        <ol className="list-decimal space-y-1 pl-5 text-sm text-muted">
+          <li>
+            {t(locale, "capture.algo1", {
+              min: PHOTO_QC.minWidth,
+              meanMin: PHOTO_QC.meanMin,
+              meanMax: PHOTO_QC.meanMax,
+              stdev: PHOTO_QC.stdevMin,
+            })}
+          </li>
+          <li>{t(locale, "capture.algo2", { quality: PHOTO_QC.researchJpegQuality })}</li>
+          <li>{t(locale, "capture.algo3", { size: MODEL_INPUT.size })}</li>
+          <li>{t(locale, "capture.algo4", { cosine: VISION_GATES.minCosineReject })}</li>
+        </ol>
+        <p className="text-sm font-bold text-terra">{t(locale, "capture.algoNot")}</p>
+      </section>
       {PHOTO_VIEWS.map((view) => {
         const current = byView[view.id];
         return (

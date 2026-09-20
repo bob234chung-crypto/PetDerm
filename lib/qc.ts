@@ -1,4 +1,5 @@
 import sharp from "sharp";
+import { PHOTO_QC } from "@/lib/photo-protocol";
 
 export type QcResult = {
   pass: boolean;
@@ -18,7 +19,7 @@ export async function inspectImageQuality(buffer: Buffer, originalFilename: stri
     const meta = await image.metadata();
     const stats = await image.stats();
 
-    if ((meta.width ?? 0) < 400 || (meta.height ?? 0) < 400) {
+    if ((meta.width ?? 0) < PHOTO_QC.minWidth || (meta.height ?? 0) < PHOTO_QC.minHeight) {
       reasons.push("qc.low_res");
     }
 
@@ -28,13 +29,13 @@ export async function inspectImageQuality(buffer: Buffer, originalFilename: stri
     const stdev =
       channels.reduce((sum, channel) => sum + channel.stdev, 0) / Math.max(channels.length, 1);
 
-    if (mean > 245) {
+    if (mean > PHOTO_QC.meanMax) {
       reasons.push("qc.overexposed");
     }
-    if (mean < 18) {
+    if (mean < PHOTO_QC.meanMin) {
       reasons.push("qc.too_dark");
     }
-    if (stdev < 8) {
+    if (stdev < PHOTO_QC.stdevMin) {
       reasons.push("qc.blur_low_contrast");
     }
   } catch {
