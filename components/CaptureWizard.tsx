@@ -53,15 +53,20 @@ export function CaptureWizard({
       const mode = await fetch("/api/storage-mode").then((response) => response.json());
       let response: Response;
       if (mode.blob) {
-        const { upload: blobUpload } = await import("@vercel/blob/client");
+        const { uploadPresigned } = await import("@vercel/blob/client");
         const blobs: Record<string, { url: string; pathname: string; contentType: string; originalFilename: string; size: number }> = {};
         for (const view of PHOTO_VIEWS) {
           const file = files[view.id];
           if (!file) continue;
-          const blob = await blobUpload(`uploads/original/${lesionId}-${view.id}-${file.name}`, file, {
-            access: "private",
-            handleUploadUrl: "/api/blob/upload",
-          });
+          const blob = await uploadPresigned(
+            `uploads/original/${lesionId}-${view.id}-${safeFilename(file.name)}`,
+            file,
+            {
+              access: "private",
+              handleUploadUrl: "/api/blob/upload",
+              contentType: file.type || "image/jpeg",
+            },
+          );
           blobs[view.id] = {
             url: blob.url,
             pathname: blob.pathname,
@@ -83,9 +88,9 @@ export function CaptureWizard({
         }
         response = await fetch(`/api/cases/${lesionId}/photos`, { method: "POST", body: form });
       }
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
       if (!response.ok) {
-        setMessage(data.error ?? t(locale, "capture.uploadFail"));
+        setMessage(typeof data.error === "string" ? data.error : t(locale, "capture.uploadFail"));
         if (data.photos) setQc(data.photos);
         return;
       }
@@ -96,8 +101,8 @@ export function CaptureWizard({
       }
       const reasons = ((data.reasons ?? []) as string[]).map((reason) => reasonLabel(locale, reason));
       setMessage(reasons.join("；") || t(locale, "capture.qcFail"));
-    } catch {
-      setMessage(t(locale, "capture.uploadFail"));
+    } catch (error) {
+      setMessage(error instanceof Error && error.message ? error.message : t(locale, "capture.uploadFail"));
     } finally {
       setPending(false);
     }
@@ -174,4 +179,9 @@ export function CaptureWizard({
       </button>
     </div>
   );
+}
+
+function safeFilename(name: string) {
+  const cleaned = name.replace(/[^a-zA-Z0-9._-]+/g, "_").replace(/^_+|_+$/g, "");
+  return cleaned.slice(0, 80) || "photo.jpg";
 }

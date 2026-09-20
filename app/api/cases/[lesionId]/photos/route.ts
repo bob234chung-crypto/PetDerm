@@ -23,6 +23,15 @@ type BlobRef = {
 };
 
 export async function POST(request: Request, ctx: Ctx) {
+  try {
+    return await savePhotos(request, ctx);
+  } catch (error) {
+    console.error("photo upload", error);
+    return jsonError(error instanceof Error ? error.message : "上傳失敗", 500);
+  }
+}
+
+async function savePhotos(request: Request, ctx: Ctx) {
   const role = await getRole();
   if (!isCaptureRole(role)) return jsonError("僅一般用戶或診所人員可上傳", 403);
   const consentId = (await cookies()).get("petderm-consent")?.value;
